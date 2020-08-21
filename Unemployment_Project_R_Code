@@ -1,0 +1,113 @@
+DATA=read.csv("unemploymentblog.csv")
+str(DATA)
+library(fpp2)
+
+ggAcf(DATA$Unemployment.Rate, lag = 144)+ ggtitle ("Unemployment Acf") #unemployment correlogram
+Unemployment_ts = ts(DATA$Unemployment.Rate, start=c(1950,5), frequency = 12) #unemployment ts objects 
+print(Unemployment_ts)
+
+###partitioning###
+test = tail(Unemployment_ts, max(length(Unemployment_ts)*0.2, 4)) 
+print(test, calendar = T)
+training = head(Unemployment_ts,length(Unemployment_ts) - length(test))
+print(training, calendar = T)
+autoplot(Unemployment_ts)+ ggtitle ("Unemployment over the Years") + ylab ("Unemployment Rate") + xlab ("Year")
+
+###Naive Models###
+
+#Naive Method
+Naive = naive(training, length(test))  
+Naive
+checkresiduals (Naive)
+accuracy(Naive,test)[2,] 
+autoplot(Naive) + ggtitle("Unemployment Rate") + ylab("Unemployment") + xlab("Date") 
+
+#Drift Method
+Drift = rwf(training,length(test),drift=TRUE)
+Drift
+checkresiduals (Drift)
+accuracy(Drift,test)[2,]  
+autoplot(Drift) + ggtitle("Unemployment Rate") + ylab("Unemployment") + xlab("Date") 
+
+###Smoothing Methods###
+
+#simple average method
+Avg = meanf(training, length(test))  
+Avg
+checkresiduals (Avg) 
+accuracy(Avg,test)[2,] 
+
+#Exponential (optimal) 
+Ses = ses(training, length(test)) 
+Ses
+checkresiduals (Ses)  
+accuracy(Ses,test)[2,]
+
+#Exponential Smoothing Method with alpha =0.1
+Ses0.1 = ses(training, alpha = 0.1, length(test)) 
+Ses0.1
+checkresiduals (Ses0.1) 
+accuracy(Ses0.1,test)[2,]
+
+#Exponential Smoothing Method with alpha =0.3
+Ses0.3 = ses(training, alpha = 0.3, length(test)) 
+Ses0.3
+checkresiduals (Ses0.3) 
+accuracy(Ses0.3,test)[2,]
+
+#Exponential Smoothing Method with alpha =0.5
+Ses0.5 = ses(training, alpha = 0.5, length(test)) 
+Ses0.5
+checkresiduals (Ses0.5) 
+accuracy(Ses0.5,test)[2,]
+
+#Exponential Smoothing Method with alpha =0.7
+Ses0.7 = ses(training, alpha = 0.7, length(test)) 
+Ses0.7
+checkresiduals (Ses0.7) 
+accuracy(Ses0.7,test)[2,]
+
+#Exponential Smoothing Method with alpha =0.9
+Ses0.9 = ses(training, alpha = 0.9, length(test)) 
+Ses0.9
+checkresiduals (Ses0.9) 
+accuracy(Ses0.9,test)[2,]
+
+#Holt Method
+Holt = holt(training, length(test)) 
+Holt
+checkresiduals (Holt)
+accuracy(Holt,test)[2,]
+
+###ARIMA MODELS###
+
+#Inital ARIMA
+dff = diff(Unemployment_ts)
+ggAcf(dff, lag=144) + ggtitle("ACF of First Order Differencing")
+ggPacf(dff, lag=144)+ggtitle("PACF of First Order Differencing")
+
+#Rough and Exhaustive Search ARIMA
+auto.arima(Unemployment_ts, seasonal = FALSE, stepwise = FALSE, approximation = FALSE)
+auto.arima(Unemployment_ts, seasonal = FALSE)
+Model1=auto.arima(training, seasonal = FALSE, stepwise = FALSE, approximation = FALSE)
+Model1
+checkresiduals(Model1)
+Model2=auto.arima(training, seasonal = FALSE)
+Model2
+checkresiduals(Model2)
+Model1pred = forecast(Model1,length(test))
+Model2pred = forecast(Model2,length(test))
+accuracy(Model1pred,test)[2,]
+accuracy(Model2pred,test)[2,]
+
+###Predictions###
+#Simple moving average had the lowest errors#
+
+Model = meanf(Unemployment_ts) 
+predictions = forecast(Model, 3)
+predictions
+autoplot(predictions) + 
+  autolayer (fitted (predictions),series = "Fitted") + 
+  ggtitle("Unemployment Rate Forecast") + ylab("Unemployment Rate") +
+  xlab("Month,Year")
+  
